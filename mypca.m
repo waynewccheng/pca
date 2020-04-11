@@ -413,5 +413,4 @@ rgb = lab2rgb(lab);
 rgb = max(rgb,0);
 rgb = min(rgb,1);
 
-save('rgb','rgb')
 end
