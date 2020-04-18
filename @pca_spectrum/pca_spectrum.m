@@ -22,6 +22,10 @@ classdef pca_spectrum < handle
         ncol
         nrow
         
+    end
+    
+    properties
+        
         % spectral data
         data
         data_masked
@@ -94,11 +98,16 @@ classdef pca_spectrum < handle
             % pca
             % great tutorial: http://www.cs.otago.ac.nz/cosc453/student_tutorials/principal_components.pdf
             % Matlab pca(): https://www.mathworks.com/help/stats/pca.html
+            
+            disp 'PCA'
+            
             [obj.coeff_masked,obj.score_masked,obj.latent,obj.tsquared,obj.explained,obj.mu_masked] = pca(data_masked);
+
         end
         
         function define_input (obj,organ_id)
-            WCC = 1
+            
+            WCC = 1;
             
             % use Toy data to save time for debugging
             if organ_id == 0
@@ -131,6 +140,8 @@ classdef pca_spectrum < handle
                     obj.organ_name = 'BiomaxOrgan10_UterineCervix_B10';
             end
             
+            msg = obj.organ_name
+            
             if WCC == 1
                 obj.transName_path = ['C:\Users\wcc\Desktop\paul data wsi\Data\ProcessedData\031320\' obj.organ_name '\Transmittance\'];
                 obj.imgTruthName_path = ['C:\Users\wcc\Desktop\paul data wsi\Data\ProcessedData\031320\' obj.organ_name '\EndResults\'];
@@ -158,6 +169,9 @@ classdef pca_spectrum < handle
         %% data conditioning
         % huge difference in PCA!!!
         function data_conditioning (obj)
+            
+            disp 'Conditioning data'
+            
             drange_scale = 0.01;
             
             % remove noisy 380 nm
@@ -420,6 +434,8 @@ classdef pca_spectrum < handle
         
         %% find the mask for the white background
         function [rgb, mask, mask_index] = find_non_white (obj)
+
+            disp 'Finding background'
             
             % data is kx41
             trans_kx41 = obj.data;
@@ -459,48 +475,79 @@ classdef pca_spectrum < handle
             mask_index = find(~white_mask);
             
         end
-
-        function reconstruct_test (obj,component_to_use)
-            obj.reconstruct(obj.score,obj.mu_masked,obj.coeff_masked,component_to_use);
+        
+        %
+        % adjust the polarity
+        %
+        function adjust_polarity (obj, obj_ref)
+            
+            coeff1 = obj_ref.coeff_masked;
+            coeff2 = obj.coeff_masked;
+            score2 = obj.score_masked;
+            
+            [coeff2_new, score2_new] = pca_spectrum.polarize_component (coeff1, coeff2, score2);
+            
+            obj.coeff_masked = coeff2_new;
+            obj.score_masked = score2_new;
+            
         end
         
+        %
+        % convert 1D rgb to 2D rgb using the image dimension
+        %
+        function rgb2 = rgb_1d_to_2d (obj, rgb1)
+            rgb2 = reshape(rgb1,obj.nrow,obj.ncol,3);
+        end
+    end
+    
+    methods (Static)
+        
+        %
         % adjust component polarity by using corrcoef
-        function coeff2_new = polarize_component (obj,coeff1,coeff2)
+        %
+        function [coeff2_new, score2_new] = polarize_component (coeff1, coeff2, score2)
             
             coeff2_new = coeff2;
+            score2_new = score2;
             
             for i = 1:41
-
+                
                 % column by column
                 v1 = coeff1(:,i);
                 v2 = coeff2(:,i);
-
+                u2 = score2(:,i);
+                
                 % compare both polarities
                 cor_plus = corrcoef(v1,v2);
                 cor_minus = corrcoef(v1,-v2);
-               
+                
                 % flip if needed
                 if cor_minus(1,2) > cor_plus(1,2)
                     v2 = -v2;
+                    u2 = -u2;
                 end
                 
                 % put it back
                 coeff2_new(:,i) = v2;
+                score2_new(:,i) = u2;
             end
             
             return
         end
         
-        function rgb2 = reconstruct (obj,score_kx41,mu,coeff,component_to_use)
+        %
+        % reconstruct 1D rgb
+        %
+        function rgb = reconstruct (score_kx41, mu, coeff, component_to_use)
             
             % pca(): https://www.mathworks.com/help/stats/pca.html
             
             % how many vectors to use?
             for j = 1:41
                 % set to 0 if not included in the vector
-                if nnz(find(component_to_use==j))==0 
+                if nnz(find(component_to_use==j))==0
                     score_kx41(:,j) = 0;
-                end 
+                end
             end
             
             % reconstruct the diff data
@@ -508,10 +555,10 @@ classdef pca_spectrum < handle
             
             % add to mean
             trans_kx41 = trans_diff_kx41 + repmat(mu,size(trans_diff_kx41,1),1);
-
+            
             % colorimetry conversion
             cc = ColorConversionClass;
-
+            
             % light source
             spd_d65 = cc.spd_d65;
             spd_d65_kx41 = repmat(spd_d65',size(score_kx41,1),1);
@@ -528,13 +575,16 @@ classdef pca_spectrum < handle
             
             % CIELAB to sRGB
             rgb = uint8(lab2rgb(lab)*255);
-          
-            % 1D to 2D
-            rgb2 = reshape(rgb,obj.nrow,obj.ncol,3);
             
-%             % show image
-%             image(rgb2)
-%             axis off
+            %             % 1D to 2D
+            %             % image size
+            %             ncol = 844;
+            %             nrow = 676;
+            %             rgb2 = reshape(rgb,nrow,ncol,3);
+            
+            %             % show image
+            %             image(rgb2)
+            %             axis off
             
             return
         end
