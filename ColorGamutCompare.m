@@ -15,15 +15,18 @@ classdef ColorGamutCompare < handle
     methods
         
         function obj = ColorGamutCompare (source, target)
-            obj.fn_o = sprintf('data\\Original\\%d%d.png',source,source)
-            obj.fn_t = sprintf('data\\Original\\%d%d.png',target,target)
-            obj.fn_r = sprintf('data\\Reinhard\\r%d%d.png',source,target)
-            obj.fn_m = sprintf('data\\Macenko\\m%d%d.png',source,target)
-            obj.fn_v = sprintf('data\\Vahadane\\v%d%d.png',source,target)
-            obj.fn_s = sprintf('data\\Spectral\\%d%d.png',source,target)
+            obj.fn_o = sprintf('data\\Original\\%d%d.png',source,source);
+            obj.fn_t = sprintf('data\\Original\\%d%d.png',target,target);
+            obj.fn_r = sprintf('data\\Reinhard\\r%d%d.png',source,target);
+            obj.fn_m = sprintf('data\\Macenko\\m%d%d.png',source,target);
+            obj.fn_v = sprintf('data\\Vahadane\\v%d%d.png',source,target);
+            obj.fn_s = sprintf('data\\Spectral\\%d%d.png',source,target);
             
-            obj.color_compare4;
+            % obj.color_compare4;
             
+        end
+        
+        function rmvs = histogram_compare (obj)
             h_o = ColorHistogram(obj.fn_o);
             h_t = ColorHistogram(obj.fn_t);
             h_r = ColorHistogram(obj.fn_r);
@@ -31,10 +34,11 @@ classdef ColorGamutCompare < handle
             h_v = ColorHistogram(obj.fn_v);
             h_s = ColorHistogram(obj.fn_s);
             
-            h_t.diff(h_r,0)
-            h_t.diff(h_m,0)
-            h_t.diff(h_v,0)
-            h_t.diff(h_s,0)
+            r = h_t.diff(h_r,0);
+            m = h_t.diff(h_m,0);
+            v = h_t.diff(h_v,0);
+            s = h_t.diff(h_s,0);
+            rmvs = [r m v s];
         end
         
         function color_compare4 (obj)
