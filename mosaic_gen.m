@@ -70,8 +70,3 @@ for i = 0:8
 end
 
 imwrite(table, sprintf("%s/table.png",mosaic_foldername));
-
-% resize from 5408x6752 to ~1200
-table_small = imresize(table, 0.25);
-imwrite(table_small, sprintf("%s/table_small.png",mosaic_foldername));
-
