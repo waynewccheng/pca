@@ -30,26 +30,19 @@ classdef pca_spectrum < handle
         data
         data_masked
         
-        % PCA coeff excluding background
+        % PCA results
         coeff_masked
-        
-        % PCA score excluding background
         score_masked
-
         latent
         tsquared
         explained
         mu_masked
         
-        % PCA scores for all pixels including white background not included
-        % in the pca() calculation
+        % reconstruct
         score
         
         % non-white areas
-        rgb
-        rgb2
-        rgb_masked
-        rgb_masked2
+        rgb_mask
         mask
         mask_index
         
@@ -72,12 +65,12 @@ classdef pca_spectrum < handle
             %
             % find white areas in the background
             %
-            [obj.rgb_masked obj.mask obj.mask_index] = obj.find_non_white;
+            [obj.rgb_mask obj.mask obj.mask_index] = obj.find_non_white;
             
             %{
             % to check
-            % rgb_masked2 = reshape(rgb_masked,obj.nrow,obj.ncol,3);
-            % image(rgb_masked2)
+            % rgb_mask2 = reshape(rgb_mask,obj.nrow,obj.ncol,3);
+            % image(rgb_mask2)
             %}
             
             %
@@ -440,7 +433,7 @@ classdef pca_spectrum < handle
         end
         
         %% find the mask for the white background
-        function [rgb_masked, mask, mask_index] = find_non_white (obj)
+        function [rgb, mask, mask_index] = find_non_white (obj)
 
             disp 'Finding background'
             
@@ -468,7 +461,6 @@ classdef pca_spectrum < handle
             % sRGB for each pixel
             % notice that colormap requires range of [0,1]
             rgb = lab2rgb(lab);
-            rgb_masked = rgb;
             
             % find the white point
             lab_max = max(lab(:,1));
@@ -477,20 +469,10 @@ classdef pca_spectrum < handle
             white_mask = abs(lab_max(:,1) - lab(:,1)) < 5;
             
             % color in green
-            rgb_masked(white_mask,1:3) = repmat([0 1 0],nnz(white_mask),1);
+            rgb(white_mask,1:3) = repmat([0 1 0],nnz(white_mask),1);
             
             mask = ~white_mask;
             mask_index = find(~white_mask);
-            
-            % assign more values
-            size(rgb)
-            size(rgb_masked)
-            
-            obj.rgb_masked = rgb_masked;
-            obj.rgb_masked2 = reshape(obj.rgb_masked,obj.nrow,obj.ncol,3);
-            
-            obj.rgb = rgb;
-            obj.rgb2 = reshape(obj.rgb,obj.nrow,obj.ncol,3);
             
         end
         
