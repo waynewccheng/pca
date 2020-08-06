@@ -26,12 +26,27 @@ for i = n
         fn = sprintf('%d%d.png',i,j);
         imwrite(im,fn)
         
-        subplot(size(n,2),size(n,2),k)
-        imshow(im)
+   %     subplot(size(n,2),size(n,2),k)
+   %     imshow(im)
         
         k = k + 1;
     end
 end
-saveas(gcf,sprintf('%dx%d.png',size(n,2),size(n,2)))
+
+% saveas(gcf,sprintf('%dx%d.png',size(n,2),size(n,2)))
+n = 1:8;
+D = {};
+k = 1;
+for i = n
+    for j = n
+        fn = sprintf('%d%d.png',i,j);
+        im = imread(fn);
+        D{k} = im;
+        k = k + 1;
+    end
+end
+
+im8x8 = imtile(D,'GridSize', [8 8]);
+imwrite(im8x8,'8x8.png');
 
 return
