@@ -490,7 +490,8 @@ classdef pca_spectrum < handle
             
             return
         end
-        
+    end
+    
         function rgb2 = reconstruct (obj,score_kx41,mu,coeff,component_to_use)
             
             % pca(): https://www.mathworks.com/help/stats/pca.html
