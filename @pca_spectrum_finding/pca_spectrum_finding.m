@@ -94,23 +94,23 @@ classdef pca_spectrum_finding < handle
             
             % reconstuct images
             k = 1;
+            D = {};  % for imtile()
             for i = n
                 for j = n
                     
-                    rgb1 = pca_spectrum.reconstruct(obj.p(i).score, obj.p(j).mu_masked, obj.p(j).coeff_masked, 1:41);
+                    rgb1 = pca_spectrum.reconstruct(obj.p(i).score, obj.p(j).mu_masked, obj.p(j).coeff_masked, 1:3);
                     rgb2 = obj.p(i).rgb_1d_to_2d(rgb1);
                     
                     fn = sprintf('%d%d.png',i,j);
                     imwrite(rgb2,fn)
                     
-                    subplot(size(n,2),size(n,2),k)
-                    imshow(rgb2)
-                    
+                    D{k} = rgb2;
                     k = k + 1;
                 end
             end
             
-            saveas(gcf,sprintf('%dx%d.png',size(n,2),size(n,2)))
+            im8x8 = imtile(D,'GridSize', [8 8]);
+            imwrite(im8x8,sprintf('%dx%d.png',size(n,2),size(n,2)));
             
             return
         end

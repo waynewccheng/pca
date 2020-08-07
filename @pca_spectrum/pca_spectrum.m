@@ -468,12 +468,12 @@ classdef pca_spectrum < handle
             % sRGB for each pixel
             % notice that colormap requires range of [0,1]
             rgb = lab2rgb(lab);
-            rgb_masked = rgb;
+            rgb_masked = rgb;             % initialize
             
-            % find the white point
+            % find the white point -- the brightest pixel in the image
             lab_max = max(lab(:,1));
             
-            % select white pixels
+            % select white pixels -- use 5 dL* as the threshold
             white_mask = abs(lab_max(:,1) - lab(:,1)) < 5;
             
             % color in green
@@ -563,22 +563,31 @@ classdef pca_spectrum < handle
             % how many vectors to use?
             for j = 1:41
                 % set to 0 if not included in the vector
+                % clear column j if j is not included in component_to_use
                 if nnz(find(component_to_use==j))==0
                     score_kx41(:,j) = 0;
                 end
             end
             
+            %
             % reconstruct the diff data
+            %
             trans_diff_kx41 = score_kx41 * coeff';
             
-            % add to mean
+            %
+            % add to mean; mu is 1x41
+            %
             trans_kx41 = trans_diff_kx41 + repmat(mu,size(trans_diff_kx41,1),1);
             
-            % colorimetry conversion
+            %
+            % colorimetry conversion; need to addpath
+            %
             cc = ColorConversionClass;
             
+            %
             % light source
-            spd_d65 = cc.spd_d65;
+            %
+            spd_d65 = cc.spd_d65;         % 41x1
             spd_d65_kx41 = repmat(spd_d65',size(score_kx41,1),1);
             
             % transmittance and light source combined
