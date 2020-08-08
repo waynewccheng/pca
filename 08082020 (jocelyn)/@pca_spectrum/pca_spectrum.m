@@ -1,0 +1,610 @@
+% PCA of spectral transmittance
+% WCC
+% 4-17-2020: change all variables to properties
+% 4-17-2020: inheriting mypca.m
+% 4-17-2020: inherited by @pca_spectrum
+% 4-11-2020: add colormap
+% 4-8-2020: using Paul's data
+
+classdef pca_spectrum < handle
+    
+    properties
+        
+        % input data file locations
+        organ_name
+        transName_path
+        imgTruthName_path
+        cied65_path
+        transName
+        imgTruthName
+        
+        % image dimensions
+        ncol
+        nrow
+        
+    end
+    
+    properties
+        
+        % spectral data
+        data
+        data_masked
+        
+        % PCA coeff excluding background
+        coeff_masked
+        
+        % PCA score excluding background
+        score_masked
+
+        latent
+        tsquared
+        explained
+        mu_masked
+        
+        % PCA scores for all pixels including white background not included
+        % in the pca() calculation
+        score
+        
+        % non-white areas
+        rgb
+        rgb2
+        rgb_masked
+        rgb_masked2
+        mask
+        mask_index
+        
+    end
+    
+    methods
+        
+        function obj = pca_spectrum (organ_id)
+            
+            %
+            % define variables for the input data
+            %
+            obj.define_input(organ_id);
+            
+            %
+            % preprocess spectral data
+            %
+            obj.data_conditioning;
+            
+            %
+            % find white areas in the background
+            %
+            [obj.rgb_masked obj.mask obj.mask_index] = obj.find_non_white;
+            
+            %{
+            % to check
+            % rgb_masked2 = reshape(rgb_masked,obj.nrow,obj.ncol,3);
+            % image(rgb_masked2)
+            %}
+            
+            %
+            % work on the masked pixels only
+            %
+            obj.data_masked = obj.data(obj.mask,:);
+            
+            %
+            % Matlab pca
+            %
+            obj.do_pca(obj.data_masked);
+            
+            % calculate the score for all pixels including those white background not
+            % included in pca()
+            obj.score = (obj.data - obj.mu_masked) * inv(obj.coeff_masked');
+            
+            %
+            % create final plot
+            %
+            % obj.create_plot;
+            
+        end
+        
+        function do_pca (obj,data_masked)
+            % pca
+            % great tutorial: http://www.cs.otago.ac.nz/cosc453/student_tutorials/principal_components.pdf
+            % Matlab pca(): https://www.mathworks.com/help/stats/pca.html
+            
+            disp 'PCA'
+            
+            [obj.coeff_masked,obj.score_masked,obj.latent,obj.tsquared,obj.explained,obj.mu_masked] = pca(data_masked);
+
+        end
+        
+        function define_input (obj,organ_id)
+            
+            WCC = 1;
+            
+            % use Toy data to save time for debugging
+            if organ_id == 0
+                obj.ncol = 200;
+                obj.nrow = 200;
+                load('toy','data')
+                obj.data = data;
+                obj.organ_name = 'Toy';
+                obj.imgTruthName = ['toy.png'];
+                return
+            end
+            
+            % data paths
+            switch organ_id
+                case 1
+                    obj.organ_name = 'BiomaxOrgan10_Bladder_M13';
+                case 2
+                    obj.organ_name = 'BiomaxOrgan10_Brain_H10';
+                case 3
+                    obj.organ_name = 'BiomaxOrgan10_Breast_A1';
+                case 4
+                    obj.organ_name = 'BiomaxOrgan10_Colon_H6';
+                case 5
+                    obj.organ_name = 'BiomaxOrgan10_Kidney_H7';
+                case 6
+                    obj.organ_name = 'BiomaxOrgan10_Liver_H9';
+                case 7
+                    obj.organ_name = 'BiomaxOrgan10_Lung_J7';
+                case 8
+                    obj.organ_name = 'BiomaxOrgan10_UterineCervix_B10';
+            end
+            
+            msg = obj.organ_name
+            
+            if WCC == 1
+                obj.transName_path = ['C:\Users\jocel\Desktop\FDA 2020\PCA\031320\' obj.organ_name '\Transmittance\'];
+                obj.imgTruthName_path = ['C:\Users\jocel\Desktop\FDA 2020\PCA\031320\' obj.organ_name '\EndResults\'];
+                obj.cied65_path = 'C:\Users\jocel\Desktop\FDA 2020\PCA';
+            end
+            
+            % File names
+            obj.transName = [obj.transName_path 'trans_mean_camera'];
+            obj.imgTruthName = [obj.imgTruthName_path 'truth.tif'];
+            
+            % image size
+            obj.ncol = 844;
+            obj.nrow = 676;
+            
+            % Load Paul's data files
+            load(obj.transName,'trans_array_m');
+            
+            % trans_array_m is 41x570544
+            
+            % data is 570544x41
+            obj.data = trans_array_m';
+            
+        end
+        
+        %% data conditioning
+        % huge difference in PCA!!!
+        function data_conditioning (obj)
+            
+            disp 'Conditioning data'
+            
+            drange_scale = 0.01;
+            
+            % remove noisy 380 nm
+            % by reducing magnitude
+            % while keeping randomness
+            drange1 = min(obj.data(:,1));
+            drange2 = max(obj.data(:,1));
+            obj.data(:,1) = obj.data(:,2) + obj.data(:,1) / (drange2-drange1) * drange_scale;
+            
+            % remove noise 780 nm
+            % by reducing magnitude
+            % while keeping randomness
+            drange1 = min(obj.data(:,end));
+            drange2 = max(obj.data(:,end));
+            obj.data(:,end) = obj.data(:,end-1) + obj.data(:,end) / (drange2-drange1) * drange_scale;
+            
+            % trim to [0,1]
+            obj.data(obj.data < 0) = 0;
+            obj.data(obj.data > 1) = 1;
+        end
+        
+        %
+        % plot
+        %
+        function create_plot (obj)
+            score = obj.score_masked;
+            coeff = obj.coeff_masked;
+            mu = obj.mu_masked;
+            mask_index = obj.mask_index;
+            
+            
+            % subplot layout
+            sprow = 4;
+            spcol = 3;
+            
+            
+            clf
+            
+            % color conversion library
+            cc = ColorConversionClass;
+            
+            %
+            % first row: show mu + i
+            %
+            for i = 1:3
+                subplot(sprow,spcol,i)
+                
+                % score of the i-th pixel
+                sco = score(:,i);
+                sco_kx41 = repmat(sco,1,41);
+                
+                % the i-th component
+                comp = coeff(:,i);
+                comp_kx41 = repmat(comp',size(sco,1),1);
+                
+                % the mean
+                mu_kx41 = repmat(mu,size(sco,1),1);
+                
+                % the transmittance including mean
+                trans_kx41 = comp_kx41 .* sco_kx41 + mu_kx41;
+                
+                % light source
+                spd_d65 = cc.spd_d65;
+                spd_d65_kx41 = repmat(spd_d65',size(sco,1),1);
+                
+                % transmittance and light source combined
+                spd_kx41 = trans_kx41 .* spd_d65_kx41;
+                
+                % SPD to CIEXYZ
+                xyz_target = cc.spd2XYZ(spd_kx41');
+                xyz_d65 = cc.spd2XYZ(spd_d65);
+                
+                % CIEXYZ to CIELAB
+                lab = cc.XYZ2lab(xyz_target,xyz_d65);
+                
+                % CIELAB to sRGB
+                rgb = uint8(lab2rgb(lab)*255);
+                
+                % create a new matrix to fit the image
+                rgb1 = uint8(zeros(obj.nrow*obj.ncol,3));
+                rgb1(mask_index,:) = rgb;
+                
+                % 1D to 2D
+                rgb2 = reshape(rgb1,obj.nrow,obj.ncol,3);
+                
+                % show image
+                image(rgb2)
+                title(sprintf('mu + %d',i))
+                axis off
+                
+            end
+            
+            %
+            % second row: % show heatmaps of the first 3 components
+            %
+            
+            % for different colormaps of subplots
+            % for some reason, colormap() needs to be done outside the loop
+            % the colormaps are saved in mycmap, the subplots in ax
+            mysco_n = 100;        % number of colors in colormap
+            mycmap = zeros(3,mysco_n,3);
+            
+            for i = 1:3
+                
+                ax(i) = subplot(sprow,spcol,1*spcol+i);
+                
+                % the score for each pixel -- 1D and 2D
+                pixelscore1 = zeros(obj.nrow*obj.ncol,1);
+                pixelscore1(mask_index) = score(:,i);
+                pixelscore2 = reshape(pixelscore1,obj.nrow,obj.ncol);
+                
+                % find the range of the scores
+                pixelscore_min = min(pixelscore1);
+                pixelscore_max = max(pixelscore1);
+                mysco = [pixelscore_min:(pixelscore_max-pixelscore_min)/(mysco_n-1):pixelscore_max]';
+                mycolormap = obj.create_colormap(coeff(:,i),mysco);
+                mycmap(i,:,:) = mycolormap;
+                
+                imagesc(pixelscore2)
+                colorbar('east')
+                axis off
+                title(sprintf('gray + %d',i))
+                
+            end
+            
+            for i=1:3
+                colormap(ax(i),squeeze(mycmap(i,:,:)))
+            end
+            
+            %
+            % third row: show histograms
+            %
+            lim_array = zeros(3,4);
+            nbin = 200;
+            edge_min = min(score(:,1:3));
+            edge_max = max(score(:,1:3));
+            edge = [edge_min : (edge_max-edge_min)/nbin : edge_max];
+            
+            for i = 1:3
+                subplot(sprow,spcol,2*spcol+i)
+                histogram(score(:,i),edge)
+                lim = axis;
+                lim_array(i,:) = lim;
+                title(sprintf('histogram %d',i))
+            end
+            
+            % adjust axis
+            axislim = [min(lim_array(:,1)) max(lim_array(:,2)) min(lim_array(:,3)) max(lim_array(:,4))];
+            for i = 1:3
+                subplot(sprow,spcol,2*spcol+i)
+                axis(axislim)
+            end
+            
+            %
+            % fourth row, column 1: show spectra
+            %
+            subplot(sprow,spcol,sprow*spcol-2)
+            hold on
+            plot(380:10:780,coeff(:,1))
+            plot(380:10:780,coeff(:,2))
+            plot(380:10:780,coeff(:,3))
+            plot(380:10:780,mu,'.')
+            xlabel('nm')
+            ylabel('T')
+            legend('1','2','3','mu')
+            title('component')
+            
+            %
+            % fourth row, column 2: show background; duplicated from first row
+            %
+            subplot(sprow,spcol,sprow*spcol-1)
+            
+            mu_kx41 = repmat(mu,obj.nrow*obj.ncol,1);
+            
+            trans_kx41 = mu_kx41;
+            
+            spd_d65 = cc.spd_d65;
+            spd_d65_kx41 = repmat(spd_d65',obj.nrow*obj.ncol,1);
+            
+            spd_kx41 = trans_kx41 .* spd_d65_kx41;
+            
+            xyz_target = cc.spd2XYZ(spd_kx41');
+            xyz_d65 = cc.spd2XYZ(spd_d65);
+            
+            lab = cc.XYZ2lab(xyz_target,xyz_d65);
+            lab2 = reshape(lab,obj.nrow,obj.ncol,3);
+            
+            rgb = uint8(lab2rgb(lab)*255);
+            rgb2 = reshape(rgb,obj.nrow,obj.ncol,3);
+            
+            image(rgb2)
+            title(sprintf('mu'))
+            axis off
+            
+            %
+            % fourth row, column 3: show the RGB truth image
+            %
+            subplot(sprow,spcol,sprow*spcol)
+            imgTruth = imread(obj.imgTruthName);
+            image(imgTruth)
+            % axis image
+            axis off
+            % colorbar
+            title(obj.organ_name,'Interpreter','none')
+            
+            % figure
+            % for i=1:9
+            %     subplot(3,3,i)
+            %     eigenvector2rgb(mu',coeff(:,i))
+            %     title([i])
+            % end
+            
+            return
+            
+        end
+        
+        %% create a colormap
+        function rgb = create_colormap (obj, trans, sco)
+            
+            cc = ColorConversionClass;
+            
+            % light source
+            spd_white = cc.spd_d65 * 1;
+            spd_white_kx41 = repmat(spd_white',size(sco,1),1);
+            
+            % the score
+            sco_kx41 = repmat(sco,1,41);
+            
+            % the component
+            comp = trans;
+            comp_kx41 = repmat(comp',size(sco,1),1);
+            
+            % the transmittance _change_ for each pixel
+            % use 50% gray as the background
+            % because 18%, meant for lightness, is too low in transmittance domain
+            gray = 0.50;
+            trans_kx41 = comp_kx41 .* sco_kx41 + gray;
+            
+            % spd for each pixel
+            spd_kx41 = trans_kx41 .* spd_white_kx41;
+            
+            % xyz for each pixel
+            xyz_target = cc.spd2XYZ(spd_kx41');
+            
+            % xyz for reference white
+            xyz_d65 = cc.spd2XYZ(spd_white);
+            
+            % lab for each pixel
+            lab = cc.XYZ2lab(xyz_target,xyz_d65);
+            
+            % sRGB for each pixel
+            % notice that colormap requires range of [0,1]
+            rgb = lab2rgb(lab);
+            
+            % trim to [0,1]
+            rgb = max(rgb,0);
+            rgb = min(rgb,1);
+            
+        end
+        
+        %% find the mask for the white background
+        function [rgb_masked, mask, mask_index] = find_non_white (obj)
+
+            disp 'Finding background'
+            
+            % data is kx41
+            trans_kx41 = obj.data;
+            
+            cc = ColorConversionClass;
+            
+            % light source
+            spd_white = cc.spd_d65 * 1;
+            spd_white_kx41 = repmat(spd_white',size(trans_kx41,1),1);
+            
+            % spd for each pixel
+            spd_kx41 = trans_kx41 .* spd_white_kx41;
+            
+            % xyz for each pixel
+            xyz_target = cc.spd2XYZ(spd_kx41');
+            
+            % xyz for reference white
+            xyz_d65 = cc.spd2XYZ(spd_white);
+            
+            % lab for each pixel
+            lab = cc.XYZ2lab(xyz_target,xyz_d65);
+            
+            % sRGB for each pixel
+            % notice that colormap requires range of [0,1]
+            rgb = lab2rgb(lab);
+            rgb_masked = rgb;
+            
+            % find the white point
+            lab_max = max(lab(:,1));
+            
+            % select white pixels
+            white_mask = abs(lab_max(:,1) - lab(:,1)) < 5;
+            
+            % color in green
+            rgb_masked(white_mask,1:3) = repmat([0 1 0],nnz(white_mask),1);
+            
+            mask = ~white_mask;
+            mask_index = find(~white_mask);
+            
+            % assign more values
+            size(rgb)
+            size(rgb_masked)
+            
+            obj.rgb_masked = rgb_masked;
+            obj.rgb_masked2 = reshape(obj.rgb_masked,obj.nrow,obj.ncol,3);
+            
+            obj.rgb = rgb;
+            obj.rgb2 = reshape(obj.rgb,obj.nrow,obj.ncol,3);
+            
+        end
+        
+        %
+        % adjust the polarity
+        %
+        function coeff2_new  = adjust_polarity (obj, obj_ref)
+            
+            coeff1 = obj.coeff_masked;
+            coeff2 = obj_ref.coeff_masked;
+            score2 = obj.score_masked;
+            
+            coeff2_new = pca_spectrum.polarize_component (coeff1, coeff2);
+            
+        end
+        
+        %
+        % convert 1D rgb to 2D rgb using the image dimension
+        %
+        function rgb2 = rgb_1d_to_2d (obj, rgb1)
+            
+            rgb2 = reshape(rgb1,obj.nrow,obj.ncol,3);
+        end
+    end
+    
+    methods (Static)
+        
+        %
+        % adjust component polarity by using corrcoef
+        %
+        function coeff2_new = polarize_component (coeff1, coeff2)
+        %function coeff2_new = polarize_component (coeff1, coeff2)
+            
+            coeff2_new = coeff2;
+    
+            
+            for i = 1:41
+                
+                % column by column
+                v1 = coeff1(:,i);
+                v2 = coeff2(:,i);
+                
+                % compare both polarities
+                cor_plus = corrcoef(v1,v2);
+                cor_minus = corrcoef(v1,-v2);
+                
+                % flip if needed
+                if cor_minus(1,2) > cor_plus(1,2)
+                   fprintf('%d column was flipped\n', i); %troubleshoot
+                    v2 = -v2;
+                end
+                
+                % put it back
+                coeff2_new(:,i) = v2;
+            end
+            
+            return
+        end
+        
+        %
+        % reconstruct 1D rgb
+        %
+        function rgb = reconstruct (score_kx41, mu, coeff, component_to_use)
+            
+            % pca(): https://www.mathworks.com/help/stats/pca.html
+            
+            % how many vectors to use?
+            for j = 1:41
+                % set to 0 if not included in the vector
+                if nnz(find(component_to_use==j))==0
+                    score_kx41(:,j) = 0;
+                end
+            end
+            
+            % reconstruct the diff data
+            trans_diff_kx41 = score_kx41 * coeff';
+            
+            % add to mean
+            trans_kx41 = trans_diff_kx41 + repmat(mu,size(trans_diff_kx41,1),1);
+            
+            % colorimetry conversion
+            cc = ColorConversionClass;
+            
+            % light source
+            spd_d65 = cc.spd_d65;
+            spd_d65_kx41 = repmat(spd_d65',size(score_kx41,1),1);
+            
+            % transmittance and light source combined
+            spd_kx41 = trans_kx41 .* spd_d65_kx41;
+            
+            % SPD to CIEXYZ
+            xyz_target = cc.spd2XYZ(spd_kx41');
+            xyz_d65 = cc.spd2XYZ(spd_d65);
+            
+            % CIEXYZ to CIELAB
+            lab = cc.XYZ2lab(xyz_target,xyz_d65);
+            
+            % CIELAB to sRGB
+            rgb = uint8(lab2rgb(lab)*255);
+            
+            %             % 1D to 2D
+            %             % image size
+            %             ncol = 844;
+            %             nrow = 676;
+            %             rgb2 = reshape(rgb,nrow,ncol,3);
+            
+            %             % show image
+            %             image(rgb2)
+            %             axis off
+            
+            return
+        end
+        
+    end
+    
+end
+
