@@ -1,0 +1,538 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>ColorGamutCompare</title><meta name="generator" content="MATLAB 9.6"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-08-09"><meta name="DC.source" content="ColorGamutCompare.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>ColorGamutCompare</h1><!--introduction--><p>Compare color gamut between Reinhard, Macenko, Vahadane, and Spectral WCC</p><!--/introduction--><pre class="codeinput"><span class="keyword">classdef</span> ColorGamutCompare &lt; handle
+
+    <span class="keyword">properties</span>
+        fn_o
+        fn_t
+        fn_r
+        fn_m
+        fn_v
+        fn_s
+        subp_r = 1
+        subp_c = 6
+        subp_n = 6
+    <span class="keyword">end</span>
+
+    <span class="keyword">methods</span>
+
+        <span class="keyword">function</span> obj = ColorGamutCompare (source, target)
+            <span class="comment">% Color normalize #source wrt to #target</span>
+            obj.fn_o = sprintf(<span class="string">'data\\Original\\%d%d.png'</span>,source,source);
+            obj.fn_t = sprintf(<span class="string">'data\\Original\\%d%d.png'</span>,target,target);
+            obj.fn_r = sprintf(<span class="string">'data\\Reinhard\\r%d%d.png'</span>,source,target);
+            obj.fn_m = sprintf(<span class="string">'data\\Macenko\\m%d%d.png'</span>,source,target);
+            obj.fn_v = sprintf(<span class="string">'data\\Vahadane\\v%d%d.png'</span>,source,target);
+            obj.fn_s = sprintf(<span class="string">'data\\Spectral\\%d%d.png'</span>,source,target);
+
+            obj.color_compare4;
+
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> rmvs = histogram_compare (obj)
+            h_o = ColorHistogram(obj.fn_o);
+            h_t = ColorHistogram(obj.fn_t);
+            h_r = ColorHistogram(obj.fn_r);
+            h_m = ColorHistogram(obj.fn_m);
+            h_v = ColorHistogram(obj.fn_v);
+            h_s = ColorHistogram(obj.fn_s);
+
+            r = h_t.diff(h_r,0);
+            m = h_t.diff(h_m,0);
+            v = h_t.diff(h_v,0);
+            s = h_t.diff(h_s,0);
+            rmvs = [r m v s];
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> color_compare4 (obj)
+            obj.remove_background(obj.fn_o);
+            obj.remove_background(obj.fn_t);
+            obj.remove_background(obj.fn_r);
+            obj.remove_background(obj.fn_m);
+            obj.remove_background(obj.fn_v);
+            obj.remove_background(obj.fn_s);
+
+            clf
+
+            subplot(obj.subp_r,obj.subp_c,1)
+            hold <span class="string">on</span>
+            obj.pixel_in_CIELAB([obj.fn_o <span class="string">'_masked.png'</span>],<span class="string">'.'</span>,[255 0 0])
+            title(<span class="string">'Original'</span>,<span class="string">'Interpreter'</span>,<span class="string">'none'</span>)
+            grid <span class="string">on</span>
+
+            subplot(obj.subp_r,obj.subp_c,2)
+            hold <span class="string">on</span>
+            obj.pixel_in_CIELAB([obj.fn_t <span class="string">'_masked.png'</span>],<span class="string">'.'</span>,[255 0 0])
+            title(<span class="string">'Target'</span>,<span class="string">'Interpreter'</span>,<span class="string">'none'</span>)
+            grid <span class="string">on</span>
+
+            subplot(obj.subp_r,obj.subp_c,3)
+            hold <span class="string">on</span>
+            obj.pixel_in_CIELAB([obj.fn_r <span class="string">'_masked.png'</span>],<span class="string">'.'</span>,[255 0 0])
+            title(<span class="string">'Reinhard'</span>,<span class="string">'Interpreter'</span>,<span class="string">'none'</span>)
+            grid <span class="string">on</span>
+
+            subplot(obj.subp_r,obj.subp_c,4)
+            hold <span class="string">on</span>
+            obj.pixel_in_CIELAB([obj.fn_m <span class="string">'_masked.png'</span>],<span class="string">'.'</span>,[255 0 0])
+            title(<span class="string">'Macenko'</span>,<span class="string">'Interpreter'</span>,<span class="string">'none'</span>)
+            grid <span class="string">on</span>
+
+            subplot(obj.subp_r,obj.subp_c,5)
+            hold <span class="string">on</span>
+            obj.pixel_in_CIELAB([obj.fn_v <span class="string">'_masked.png'</span>],<span class="string">'.'</span>,[255 0 0])
+            title(<span class="string">'Vahadane'</span>,<span class="string">'Interpreter'</span>,<span class="string">'none'</span>)
+            grid <span class="string">on</span>
+
+            subplot(obj.subp_r,obj.subp_c,6)
+            hold <span class="string">on</span>
+            obj.pixel_in_CIELAB([obj.fn_s <span class="string">'_masked.png'</span>],<span class="string">'.'</span>,[255 0 0])
+            title(<span class="string">'Spectral'</span>,<span class="string">'Interpreter'</span>,<span class="string">'none'</span>)
+            grid <span class="string">on</span>
+
+            obj.axis_set([0 60 -70 10 20 100]);
+            obj.view_set([111 34])
+
+            <span class="comment">% capture</span>
+
+            set(gcf, <span class="string">'Units'</span>, <span class="string">'Normalized'</span>, <span class="string">'OuterPosition'</span>, [0, 0.25, 1, 0.30]);
+            saveas(gcf,<span class="string">'colorgamut.png'</span>)
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> axis_set (obj, axis_range)
+            <span class="keyword">for</span> i = 1:obj.subp_n
+                subplot(obj.subp_r,obj.subp_c,i)
+                <span class="comment">%axis([0 40 -50 10 0 100])</span>
+                axis(axis_range)
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> view_follow (obj, subp)
+            subplot(obj.subp_r,obj.subp_c,subp)
+            [a b] = view;
+            obj.view_set([a b]);
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> view_set (obj, v)
+            <span class="keyword">for</span> i = 1:obj.subp_n
+                subplot(obj.subp_r,obj.subp_c,i)
+                <span class="comment">%view([120 25])</span>
+                view(v)
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+
+        <span class="keyword">function</span> color_compare (obj,fn1,fn2)
+            <span class="comment">% obsolete</span>
+            obj.remove_background(fn1);
+            obj.remove_background(fn2);
+
+            clf
+
+            subplot(1,3,1)
+            imshow(fn1)
+            title(fn1,<span class="string">'Interpreter'</span>,<span class="string">'none'</span>)
+
+            subplot(1,3,2)
+            imshow(fn2)
+            title(fn2,<span class="string">'Interpreter'</span>,<span class="string">'none'</span>)
+
+            subplot(1,3,3)
+            hold <span class="string">on</span>
+            obj.pixel_in_CIELAB([fn1 <span class="string">'_masked.png'</span>],<span class="string">'.'</span>,0)
+            obj.pixel_in_CIELAB([fn2 <span class="string">'_masked.png'</span>],<span class="string">'.'</span>,1)
+
+            axis([0 40 -50 10 0 100])
+            view([120 25])
+            grid <span class="string">on</span>
+
+        <span class="keyword">end</span>
+
+        <span class="comment">% for Weijie and Weizhe, Camelyon16 database</span>
+        <span class="comment">% remove background for H&amp;E slides</span>
+
+        <span class="keyword">function</span> remove_background (obj,fn)
+
+            <span class="comment">% threshold from white</span>
+            chroma_th = 10;
+
+            <span class="comment">% read image</span>
+            rgb = imread(fn);
+            rgb1 = reshape(rgb,size(rgb,1)*size(rgb,2),3);
+
+            <span class="comment">% convert to CIELAB</span>
+            lab1 = rgb2lab(rgb1);
+
+            <span class="comment">% calculate chroma</span>
+            chroma = (lab1(:,2).^2 + lab1(:,3).^2) .^ 0.5;
+
+            <span class="comment">% for every pixel having chroma less than the threshold</span>
+            <span class="comment">% change color to green</span>
+            rgb1(chroma &lt; chroma_th,1) = 0;
+            rgb1(chroma &lt; chroma_th,2) = 255;
+            rgb1(chroma &lt; chroma_th,3) = 0;
+
+            <span class="comment">% back to 2D</span>
+            rgb2 = reshape(rgb1,size(rgb,1),size(rgb,2),3);
+
+            <span class="comment">% visual check</span>
+            <span class="keyword">if</span> 0
+                subplot(1,2,1)
+                image(rgb)
+                subplot(1,2,2)
+                image(rgb2)
+            <span class="keyword">end</span>
+
+            <span class="comment">% write result</span>
+            imwrite(rgb2,[fn <span class="string">'_masked.png'</span>])
+
+            <span class="keyword">return</span>
+        <span class="keyword">end</span>
+
+        <span class="comment">% for Weijie and Weizhe</span>
+        <span class="comment">% show image pixels in CIELAB</span>
+
+        <span class="keyword">function</span> pixel_in_CIELAB (obj,fn,marker,clr)
+
+            <span class="comment">% linearize</span>
+            rgb = imread(fn);
+            rgb1 = reshape(rgb,size(rgb,1)*size(rgb,2),3);
+
+            <span class="comment">% convert to LAB</span>
+            lab1 = rgb2lab(rgb1);
+
+            <span class="comment">% remove masked green pixels</span>
+            <span class="keyword">if</span> 1
+                mask = (rgb1(:,1) == 0) &amp; (rgb1(:,2) == 255) &amp; (rgb1(:,3) == 0);
+                lab1_masked = lab1(mask,:);
+                rgb1_masked = rgb1(mask,:);
+            <span class="keyword">end</span>
+
+            <span class="comment">% show</span>
+            scatter3(lab1(:,2),lab1(:,3),lab1(:,1),1,double(rgb1(:,:))/255,<span class="string">'o'</span>)
+
+            <span class="comment">%scatter3(lab1(:,2),lab1(:,3),lab1(:,1),1,double(clr)/255,marker)</span>
+
+            axis <span class="string">equal</span>
+            xlabel(<span class="string">'{\it a}*'</span>)
+            ylabel(<span class="string">'{\it b}*'</span>)
+            zlabel(<span class="string">'{\it L}*'</span>)
+
+        <span class="keyword">end</span>
+
+    <span class="keyword">end</span>
+
+<span class="keyword">end</span>
+</pre><pre class="codeoutput error">Error using hgconvertunits
+The first input argument must be a figure handle.
+
+Error in alternatePrintPath
+
+Error in print (line 82)
+pj = alternatePrintPath(pj);
+
+Error in saveas (line 181)
+        print( h, name, ['-d' dev{i}] )
+
+Error in ColorGamutCompare/color_compare4 (line 101)
+            saveas(gcf,'colorgamut.png')
+
+Error in ColorGamutCompare (line 30)
+            obj.color_compare4;
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% ColorGamutCompare
+% Compare color gamut between Reinhard, Macenko, Vahadane, and Spectral
+% WCC
+%%
+classdef ColorGamutCompare < handle
+    
+    properties
+        fn_o
+        fn_t
+        fn_r
+        fn_m
+        fn_v
+        fn_s
+        subp_r = 1
+        subp_c = 6
+        subp_n = 6
+    end
+    
+    methods
+        
+        function obj = ColorGamutCompare (source, target)
+            % Color normalize #source wrt to #target
+            obj.fn_o = sprintf('data\\Original\\%d%d.png',source,source);
+            obj.fn_t = sprintf('data\\Original\\%d%d.png',target,target);
+            obj.fn_r = sprintf('data\\Reinhard\\r%d%d.png',source,target);
+            obj.fn_m = sprintf('data\\Macenko\\m%d%d.png',source,target);
+            obj.fn_v = sprintf('data\\Vahadane\\v%d%d.png',source,target);
+            obj.fn_s = sprintf('data\\Spectral\\%d%d.png',source,target);
+            
+            obj.color_compare4;
+            
+        end
+        
+        function rmvs = histogram_compare (obj)
+            h_o = ColorHistogram(obj.fn_o);
+            h_t = ColorHistogram(obj.fn_t);
+            h_r = ColorHistogram(obj.fn_r);
+            h_m = ColorHistogram(obj.fn_m);
+            h_v = ColorHistogram(obj.fn_v);
+            h_s = ColorHistogram(obj.fn_s);
+            
+            r = h_t.diff(h_r,0);
+            m = h_t.diff(h_m,0);
+            v = h_t.diff(h_v,0);
+            s = h_t.diff(h_s,0);
+            rmvs = [r m v s];
+        end
+        
+        function color_compare4 (obj)
+            obj.remove_background(obj.fn_o);
+            obj.remove_background(obj.fn_t);
+            obj.remove_background(obj.fn_r);
+            obj.remove_background(obj.fn_m);
+            obj.remove_background(obj.fn_v);
+            obj.remove_background(obj.fn_s);
+            
+            clf
+            
+            subplot(obj.subp_r,obj.subp_c,1)
+            hold on
+            obj.pixel_in_CIELAB([obj.fn_o '_masked.png'],'.',[255 0 0])
+            title('Original','Interpreter','none')
+            grid on
+            
+            subplot(obj.subp_r,obj.subp_c,2)
+            hold on
+            obj.pixel_in_CIELAB([obj.fn_t '_masked.png'],'.',[255 0 0])
+            title('Target','Interpreter','none')
+            grid on
+            
+            subplot(obj.subp_r,obj.subp_c,3)
+            hold on
+            obj.pixel_in_CIELAB([obj.fn_r '_masked.png'],'.',[255 0 0])
+            title('Reinhard','Interpreter','none')
+            grid on
+            
+            subplot(obj.subp_r,obj.subp_c,4)
+            hold on
+            obj.pixel_in_CIELAB([obj.fn_m '_masked.png'],'.',[255 0 0])
+            title('Macenko','Interpreter','none')
+            grid on
+            
+            subplot(obj.subp_r,obj.subp_c,5)
+            hold on
+            obj.pixel_in_CIELAB([obj.fn_v '_masked.png'],'.',[255 0 0])
+            title('Vahadane','Interpreter','none')
+            grid on
+            
+            subplot(obj.subp_r,obj.subp_c,6)
+            hold on
+            obj.pixel_in_CIELAB([obj.fn_s '_masked.png'],'.',[255 0 0])
+            title('Spectral','Interpreter','none')
+            grid on
+            
+            obj.axis_set([0 60 -70 10 20 100]);
+            obj.view_set([111 34])
+            
+            % capture
+            
+            set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0.25, 1, 0.30]);
+            saveas(gcf,'colorgamut.png')
+        end
+        
+        function axis_set (obj, axis_range)
+            for i = 1:obj.subp_n
+                subplot(obj.subp_r,obj.subp_c,i)
+                %axis([0 40 -50 10 0 100])
+                axis(axis_range)
+            end
+        end
+        
+        function view_follow (obj, subp)
+            subplot(obj.subp_r,obj.subp_c,subp)
+            [a b] = view;
+            obj.view_set([a b]);
+        end
+        
+        function view_set (obj, v)
+            for i = 1:obj.subp_n
+                subplot(obj.subp_r,obj.subp_c,i)
+                %view([120 25])
+                view(v)
+            end
+        end
+        
+        function color_compare (obj,fn1,fn2)
+            % obsolete
+            obj.remove_background(fn1);
+            obj.remove_background(fn2);
+            
+            clf
+            
+            subplot(1,3,1)
+            imshow(fn1)
+            title(fn1,'Interpreter','none')
+            
+            subplot(1,3,2)
+            imshow(fn2)
+            title(fn2,'Interpreter','none')
+            
+            subplot(1,3,3)
+            hold on
+            obj.pixel_in_CIELAB([fn1 '_masked.png'],'.',0)
+            obj.pixel_in_CIELAB([fn2 '_masked.png'],'.',1)
+            
+            axis([0 40 -50 10 0 100])
+            view([120 25])
+            grid on
+            
+        end
+        
+        % for Weijie and Weizhe, Camelyon16 database
+        % remove background for H&E slides
+        
+        function remove_background (obj,fn)
+            
+            % threshold from white
+            chroma_th = 10;
+            
+            % read image
+            rgb = imread(fn);
+            rgb1 = reshape(rgb,size(rgb,1)*size(rgb,2),3);
+            
+            % convert to CIELAB
+            lab1 = rgb2lab(rgb1);
+            
+            % calculate chroma
+            chroma = (lab1(:,2).^2 + lab1(:,3).^2) .^ 0.5;
+            
+            % for every pixel having chroma less than the threshold
+            % change color to green
+            rgb1(chroma < chroma_th,1) = 0;
+            rgb1(chroma < chroma_th,2) = 255;
+            rgb1(chroma < chroma_th,3) = 0;
+            
+            % back to 2D
+            rgb2 = reshape(rgb1,size(rgb,1),size(rgb,2),3);
+            
+            % visual check
+            if 0
+                subplot(1,2,1)
+                image(rgb)
+                subplot(1,2,2)
+                image(rgb2)
+            end
+            
+            % write result
+            imwrite(rgb2,[fn '_masked.png'])
+            
+            return
+        end
+        
+        % for Weijie and Weizhe
+        % show image pixels in CIELAB
+        
+        function pixel_in_CIELAB (obj,fn,marker,clr)
+            
+            % linearize
+            rgb = imread(fn);
+            rgb1 = reshape(rgb,size(rgb,1)*size(rgb,2),3);
+            
+            % convert to LAB
+            lab1 = rgb2lab(rgb1);
+            
+            % remove masked green pixels
+            if 1
+                mask = (rgb1(:,1) == 0) & (rgb1(:,2) == 255) & (rgb1(:,3) == 0);
+                lab1_masked = lab1(mask,:);
+                rgb1_masked = rgb1(mask,:);
+            end
+            
+            % show
+            scatter3(lab1(:,2),lab1(:,3),lab1(:,1),1,double(rgb1(:,:))/255,'o')
+            
+            %scatter3(lab1(:,2),lab1(:,3),lab1(:,1),1,double(clr)/255,marker)
+            
+            axis equal
+            xlabel('{\it a}*')
+            ylabel('{\it b}*')
+            zlabel('{\it L}*')
+            
+        end
+        
+    end
+    
+end
+
+
+##### SOURCE END #####
+--></body></html>

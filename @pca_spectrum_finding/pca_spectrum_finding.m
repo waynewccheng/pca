@@ -1,5 +1,6 @@
-% WCC
 % experiments of pca_spectrum
+% WCC
+% 8/9/2020 
 % 4-18-2020
 classdef pca_spectrum_finding < handle
     %PCA_SPECTRUM_FINDING Summary of this class goes here
@@ -23,9 +24,9 @@ classdef pca_spectrum_finding < handle
             end
             
             % adjust the polarity based on #1
-            for i = 2:8
-                obj.p(i).adjust_polarity(obj.p(1));
-            end
+%             for i = 2:8
+%                 obj.p(i).adjust_polarity(obj.p(1));
+%             end
             
         end
         
@@ -80,6 +81,27 @@ classdef pca_spectrum_finding < handle
             
             set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0, 1, 0.80]);
             saveas(gcf,sprintf('component_3.png'))
+            
+            return
+        end
+
+        function recolor_source_to_target (obj, i , j)
+            % reconstruct 8 images based on the PCA components of each other
+            % WCC
+            % 8/9/2020
+            % 4-17-2020
+
+            % copy to local
+            pi = obj.p(i);
+            pj = obj.p(j);
+            pj.adjust_polarity(pi);            
+            
+            % reconstuct images
+            rgb1 = pca_spectrum.reconstruct(pi.score, pj.mu_masked, pj.coeff_masked, 1:3);
+            rgb2 = pi.rgb_1d_to_2d(rgb1);
+            
+            fn = sprintf('%d%d.png',i,j);
+            imwrite(rgb2,fn)
             
             return
         end

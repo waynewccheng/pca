@@ -68,7 +68,7 @@ classdef pca_spectrum < handle
             % preprocess spectral data
             %
             obj.data_conditioning;
-            
+
             %
             % find white areas in the background
             %
@@ -474,7 +474,9 @@ classdef pca_spectrum < handle
             lab_max = max(lab(:,1));
             
             % select white pixels -- use 5 dL* as the threshold
-            white_mask = abs(lab_max(:,1) - lab(:,1)) < 5;
+% !!!!!!!!!!!
+%            white_mask = abs(lab_max(:,1) - lab(:,1)) < 5;
+            white_mask = abs(lab_max(:,1) - lab(:,1)) < -1;
             
             % color in green
             rgb_masked(white_mask,1:3) = repmat([0 1 0],nnz(white_mask),1);
