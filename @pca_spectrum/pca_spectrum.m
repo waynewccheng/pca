@@ -1,5 +1,6 @@
 % PCA of spectral transmittance
 % WCC
+% 8-10-2020: skip de-background
 % 4-17-2020: change all variables to properties
 % 4-17-2020: inheriting mypca.m
 % 4-17-2020: inherited by @pca_spectrum
@@ -53,6 +54,7 @@ classdef pca_spectrum < handle
         mask
         mask_index
         
+        DEBACKGROUND = 0
     end
     
     methods
@@ -106,7 +108,7 @@ classdef pca_spectrum < handle
             % great tutorial: http://www.cs.otago.ac.nz/cosc453/student_tutorials/principal_components.pdf
             % Matlab pca(): https://www.mathworks.com/help/stats/pca.html
             
-            disp 'PCA'
+            fprintf('PCA, version 8-10-2020, debackground==%d\n',obj.DEBACKGROUND)
             
             [obj.coeff_masked,obj.score_masked,obj.latent,obj.tsquared,obj.explained,obj.mu_masked] = pca(data_masked);
 
@@ -474,9 +476,18 @@ classdef pca_spectrum < handle
             lab_max = max(lab(:,1));
             
             % select white pixels -- use 5 dL* as the threshold
-% !!!!!!!!!!!
-%            white_mask = abs(lab_max(:,1) - lab(:,1)) < 5;
-            white_mask = abs(lab_max(:,1) - lab(:,1)) < -1;
+
+            % !!!!!!!!!!!!!!!!!!!!!!!
+            %
+            % To debackground or not?
+            %
+            % !!!!!!!!!!!!!!!!!!!!!!! 
+            if obj.DEBACKGROUND == 1
+                white_mask = abs(lab_max(:,1) - lab(:,1)) < 5;
+            else
+                % enforce the mask to be nill
+                white_mask = abs(lab_max(:,1) - lab(:,1)) < -1;
+            end
             
             % color in green
             rgb_masked(white_mask,1:3) = repmat([0 1 0],nnz(white_mask),1);

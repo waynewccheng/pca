@@ -4,6 +4,17 @@
 %%
 classdef ColorGamutCompare < handle
     
+    properties
+        % ratio of color gamut size after color normalization
+        r_r
+        r_m
+        r_v
+        r_s
+        
+        % color gamut size of source
+        n_present
+    end
+    
     properties (Access = private)
         fn_o
         fn_t
@@ -25,7 +36,7 @@ classdef ColorGamutCompare < handle
             obj.fn_r = sprintf('data\\Reinhard\\r%d%d.png',source,target);
             obj.fn_m = sprintf('data\\Macenko\\m%d%d.png',source,target);
             obj.fn_v = sprintf('data\\Vahadane\\v%d%d.png',source,target);
-            obj.fn_s = sprintf('data\\Spectral\\%d%d.png',source,target);
+            obj.fn_s = sprintf('data\\Spectral\\s%d%d.png',source,target);
         end
         
         function rmvs = histogram_compare (obj)
@@ -41,6 +52,15 @@ classdef ColorGamutCompare < handle
             v = h_t.diff(h_v,0);
             s = h_t.diff(h_s,0);
             rmvs = [r m v s];
+
+            % ratio of color gamut size after color normalization            
+            obj.r_r = h_r.n_present / h_o.n_present;
+            obj.r_m = h_m.n_present / h_o.n_present;
+            obj.r_v = h_v.n_present / h_o.n_present;
+            obj.r_s = h_s.n_present / h_o.n_present;
+            
+            % color gamut size of source
+            obj.n_present = h_o.n_present;
         end
         
         function color_compare4 (obj)

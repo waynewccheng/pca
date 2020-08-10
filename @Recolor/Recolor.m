@@ -44,11 +44,13 @@ classdef Recolor
             hold on
             Recolor.show_spectrum(pi.coeff_masked,0)
             Recolor.show_spectrum(pj.coeff_masked,1)
-            title('Component Source')
+            title('Component')
             
             % reconstuct images
             rgb1 = pca_spectrum.reconstruct(pi.score, pj.mu_masked, pj.coeff_masked, 1:3);
             rgb2 = pi.rgb_1d_to_2d(rgb1);
+            
+            imwrite(rgb2,sprintf('s%d%d.png',i,j))
             
             subplot(2,2,4)
             image(rgb2)

@@ -1,14 +1,17 @@
 classdef ColorHistogram
    
-    properties
+    properties (Constant)
+        OFF
         OFFSET_L = 1
-        OFFSET_A = 100
-        OFFSET_B = 100
+        OFFSET_A = 110
+        OFFSET_B = 110
         
         SIZE_L = 100 + 1
-        SIZE_A = 1 + 100 * 2
-        SIZE_B = 1 + 100 * 2
-        
+        SIZE_A = 1 + 110 * 2
+        SIZE_B = 1 + 110 * 2
+    end
+
+    properties
         n_pixel
         n_present
         m
@@ -52,6 +55,11 @@ classdef ColorHistogram
                 lab_b = lab_masked(:,3) + obj.OFFSET_B;
                 many_ones = ones(size(lab_masked,1),1);
                 
+                assert(nnz(lab_a < 1)==0);
+                assert(nnz(lab_a > obj.SIZE_A)==0);
+                assert(nnz(lab_b < 1)==0);
+                assert(nnz(lab_b > obj.SIZE_B)==0);
+                    
                 % make a sparse matrix with a* and b* and ones
                 s{l+1} = sparse(lab_a,lab_b,many_ones,obj.SIZE_A,obj.SIZE_B);
             end
