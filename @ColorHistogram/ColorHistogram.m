@@ -1,14 +1,14 @@
 classdef ColorHistogram
    
     properties (Constant)
-        OFF
+        OFFSET_AB_RANGE = 110
         OFFSET_L = 1
-        OFFSET_A = 110
-        OFFSET_B = 110
+        OFFSET_A = ColorHistogram.OFFSET_AB_RANGE
+        OFFSET_B = ColorHistogram.OFFSET_AB_RANGE
         
         SIZE_L = 100 + 1
-        SIZE_A = 1 + 110 * 2
-        SIZE_B = 1 + 110 * 2
+        SIZE_A = 1 + ColorHistogram.OFFSET_AB_RANGE * 2
+        SIZE_B = 1 + ColorHistogram.OFFSET_AB_RANGE * 2
     end
 
     properties
