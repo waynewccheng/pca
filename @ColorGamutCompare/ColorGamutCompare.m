@@ -52,8 +52,8 @@ classdef ColorGamutCompare < handle
             v = h_t.diff(h_v,0);
             s = h_t.diff(h_s,0);
             rmvs = [r m v s];
-
-            % ratio of color gamut size after color normalization            
+            
+            % ratio of color gamut size after color normalization
             obj.r_r = h_r.n_present / h_o.n_present;
             obj.r_m = h_m.n_present / h_o.n_present;
             obj.r_v = h_v.n_present / h_o.n_present;
@@ -239,13 +239,153 @@ classdef ColorGamutCompare < handle
         end
         
     end
-
+    
     methods (Static)
+        
         function test
-            cgc = ColorGamutCompare(1,8);
-            cgc.color_compare4
-            %cgc.histogram_compare            
+
+            if 0
+                cgc = ColorGamutCompare(1,8);
+                cgc.color_compare4
+            end
+            
+            if 0
+                cgc = ColorGamutCompare(1,8);
+                cgc.histogram_compare
+            end
+            
+            if 0
+                ColorGamutCompare.colorgamutsize;
+            end
+            
+            if 0
+                ColorGamutCompare.colorgamutratio;
+            end
+            
+            if 0
+                ColorGamutCompare.colorgamutintersection;
+            end
+            
         end
-    end    
+        
+        function colorgamutsize
+            %% color gamut size of original source images
+            if 1
+                data = zeros(8,1);
+                
+                for j = 1:8
+                    cgc = ColorGamutCompare(j,1)
+                    cgc.histogram_compare;
+                    data(j,1) = cgc.n_present;
+                end
+                
+                save('colorgamutpresent','data')
+            end
+            
+            if 1
+                load('colorgamutpresent','data')
+                figure
+                bar(data)
+                xlabel('Image #')
+                ylabel('Color Gamut Size')
+                
+                saveas(gcf,'colorgamutpresent.png')
+            end
+            
+            return
+        end
+        
+        function colorgamutratio
+            % color gamut size change after/before color normalization
+            if 1
+                data = zeros(8,8,4);
+                
+                for j = 1:8
+                    
+                    for i = 1:8
+                        [j i]
+                        
+                        cgc = ColorGamutCompare(j,i)
+                        cgc.histogram_compare;
+                        rmvs = [cgc.r_r cgc.r_m cgc.r_v cgc.r_s];
+                        data(j,i,:) = rmvs;
+                        [rmvs]
+                    end
+                    
+                end
+                
+                save('colorgamutratio','data')
+            end
+            
+            if 1
+                load('colorgamutratio','data')
+                figure
+                for j = 1:8
+                    ax = subplot(2,4,j)
+                    bar(squeeze(data(j,:,:))*100)
+                    xlabel('Target image #')
+                    title(sprintf('Source image #%d',j))
+                    ytickformat(ax, 'percentage');
+                    axis([0.5 8.5 0 150])
+                end
+                
+                %subplot(2,4,2)
+                %legend('Reinhard','Macenko','Vahadane','Spectral')
+                %legend('Location','NorthEast')
+                
+                set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0.25, 1, 0.40]);
+                
+                saveas(gcf,'colorgamutratio.png')
+            end
+            
+            return
+        end
+        
+        function colorgamutintersection
+            % color gamut intersection between two images
+            if 1
+                data = zeros(8,8,4);
+                
+                for j = 1:8
+                    
+                    for i = 1:8
+                        [j i]
+                        cgc = ColorGamutCompare(j,i)
+                        rmvs = cgc.histogram_compare;
+                        data(j,i,:) = rmvs;
+                        [rmvs]
+                    end
+                    
+                end
+                
+                save('colorgamutcoverage','data')
+            end
+            
+            if 1
+                %
+                % visualization
+                %
+                load('colorgamutcoverage','data')
+                figure
+                for j = 1:8
+                    ax = subplot(2,4,j)
+                    bar(squeeze(data(j,:,:))*100)
+                    xlabel('Target image #')
+                    title(sprintf('Source image #%d',j))
+                    ytickformat(ax, 'percentage');
+                end
+                subplot(2,4,2)
+                legend('Reinhard','Macenko','Vahadane','Spectral')
+                legend('Location','NorthEast')
+                
+                set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0.25, 1, 0.40]);
+                
+                saveas(gcf,'colorgamutcoverage.png')
+            end
+            
+            return
+        end
+        
+    end
 end
 
