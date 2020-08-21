@@ -9,8 +9,11 @@ classdef MosaicGen
     
     methods (Static)
         
-        function test
-            %MosaicGen.mosaic_gen_1x8;
+        function SPIE_Fig1
+            MosaicGen.mosaic_gen_1x8;
+        end
+        
+        function SPIE_Fig3
             MosaicGen.mosaic_gen_8x8;
         end
         
@@ -124,7 +127,7 @@ classdef MosaicGen
             fig_fn = sprintf('%s/fig1.png', fig_foldername);
             
             % "half border thickness"
-            hbt = 5;
+            hbt = 2;
             
             im_fns = strings(1, 8);
             
@@ -132,21 +135,38 @@ classdef MosaicGen
                 im_fns(i) = sprintf('%s/%d%d.png', foldername, i, i);
             end
             
-            fig = imtile(im_fns, 'GridSize', [1 8]);
+            fig = imtile(im_fns, 'GridSize', [1 8], 'BorderSize', [hbt*2 hbt*2]);
             label_pos = zeros(8,2);
             
-            
-            for i = 1:7
-                for j = -1*hbt+1:hbt
-                    fig(:, i*width+j, :) = zeros(height, 1, 3);
+            if 0
+                % draw borders
+                for i = 1:7
+                    for j = -1*hbt+1:hbt
+                        fig(:, i*width+j, :) = zeros(height, 1, 3);
+                    end
+                    label_pos(i,:) = [(i-1)*width+3*hbt 2*hbt];
                 end
-                label_pos(i,:) = [(i-1)*width+3*hbt 2*hbt];
+                label_pos(8,:) = [7*width+2*hbt 2*hbt];
+                
+                fig = cat(1, zeros(10, 8*width, 3), fig, zeros(10, 8*width, 3));
+                fig = cat(2, zeros(height+20, 10, 3), fig, zeros(height+20, 10, 3));
+                
             end
-            label_pos(8,:) = [7*width+2*hbt 2*hbt];
             
-            fig = cat(1, zeros(10, 8*width, 3), fig, zeros(10, 8*width, 3));
-            fig = cat(2, zeros(height+20, 10, 3), fig, zeros(height+20, 10, 3));
+            % add image id on the upper left corner
+            for i = 1:7
+                label_pos(i,:) = [(i-1)*(width+4*hbt)+3*hbt 2*hbt];
+            end
+            label_pos(8,:) = [7*(width+4*hbt)+2*hbt 2*hbt];
+            
             fig = insertText(fig, label_pos, [1 2 3 4 5 6 7 8], 'FontSize', 100);
+            
+            % add gamut size
+            load('colorgamutpresent','data')
+            for i = 1:8
+                %data_label(i) = sprintf('%.2f',data(i,1));
+            end
+            fig = insertText(fig, label_pos + [0 floor(height-0.20*height)], data, 'FontSize', 60, 'BoxColor','w');
             
             imwrite(fig, fig_fn);
             

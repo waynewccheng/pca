@@ -47,10 +47,15 @@ classdef ColorGamutCompare < handle
             h_v = ColorHistogram(obj.fn_v);
             h_s = ColorHistogram(obj.fn_s);
             
-            r = h_t.diff(h_r,0);
-            m = h_t.diff(h_m,0);
-            v = h_t.diff(h_v,0);
-            s = h_t.diff(h_s,0);
+            %r = h_t.diff(h_r,0);
+            %m = h_t.diff(h_m,0);
+            %v = h_t.diff(h_v,0);
+            %s = h_t.diff(h_s,0);
+            [r r1 r2] = h_t.color_normality(h_r,0)
+            [m m1 m2] = h_t.color_normality(h_m,0)
+            [v v1 v2] = h_t.color_normality(h_v,0)
+            [s s1 s2] = h_t.color_normality(h_s,0)
+            [o o1 o2] = h_t.color_normality(h_o,0)
             rmvs = [r m v s];
             
             % ratio of color gamut size after color normalization
@@ -76,7 +81,7 @@ classdef ColorGamutCompare < handle
             subplot(obj.subp_r,obj.subp_c,1)
             hold on
             obj.pixel_in_CIELAB([obj.fn_o '_masked.png'],'.',[255 0 0])
-            title('Original','Interpreter','none')
+            title('Source','Interpreter','none')
             grid on
             
             subplot(obj.subp_r,obj.subp_c,2)
@@ -241,6 +246,15 @@ classdef ColorGamutCompare < handle
     end
     
     methods (Static)
+
+        function SPIE_Fig4
+            cgc = ColorGamutCompare(1,8);
+            cgc.color_compare4
+        end
+
+        function SPIE_Fig5
+            ColorGamutCompare.colorgamutintersection;
+        end
         
         function test
 
@@ -262,7 +276,7 @@ classdef ColorGamutCompare < handle
                 ColorGamutCompare.colorgamutratio;
             end
             
-            if 0
+            if 1
                 ColorGamutCompare.colorgamutintersection;
             end
             
@@ -343,7 +357,7 @@ classdef ColorGamutCompare < handle
         
         function colorgamutintersection
             % color gamut intersection between two images
-            if 1
+            if 0
                 data = zeros(8,8,4);
                 
                 for j = 1:8
@@ -369,12 +383,13 @@ classdef ColorGamutCompare < handle
                 figure
                 for j = 1:8
                     ax = subplot(2,4,j)
-                    bar(squeeze(data(j,:,:))*100)
+                    bar(squeeze(data(j,:,:)))
                     xlabel('Target image #')
+                    ylabel('Color Normality')
                     title(sprintf('Source image #%d',j))
-                    ytickformat(ax, 'percentage');
+                    %ytickformat(ax, 'percentage');
                 end
-                subplot(2,4,2)
+                subplot(2,4,3)
                 legend('Reinhard','Macenko','Vahadane','Spectral')
                 legend('Location','NorthEast')
                 

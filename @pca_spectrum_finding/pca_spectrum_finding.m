@@ -10,6 +10,17 @@ classdef pca_spectrum_finding < handle
         p
     end
     
+    methods (Static)
+        
+        function SPIE_Fig2
+
+            p = pca_spectrum_finding
+            p.plot_components_in_3            
+            
+        end
+        
+    end
+
     methods
         
         function obj = pca_spectrum_finding
@@ -24,9 +35,9 @@ classdef pca_spectrum_finding < handle
             end
             
             % adjust the polarity based on #1
-%             for i = 2:8
-%                 obj.p(i).adjust_polarity(obj.p(1));
-%             end
+            for i = 2:8
+                obj.p(i).adjust_polarity(obj.p(1));
+            end
             
         end
         
@@ -73,13 +84,17 @@ classdef pca_spectrum_finding < handle
                 
                 xlabel('Wavelength (nm)')
                 ylabel('Transmittance (T)')
-                legend('1','2','3','4','5','6','7','8')
                 title(sprintf('Component #%d',i))
                 axis([380 780 -0.5 +0.5])
                 axis square
             end
-            
-            set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0, 1, 0.80]);
+
+            subplot(1,3,1)
+            lgd = legend('#1','#2','#3','#4','#5','#6','#7','#8','Location','South')
+            legend('boxon')
+            lgd.NumColumns = 2;
+
+            set(gcf, 'Units', 'Normalized', 'OuterPosition', [0.2, 0.2, 0.4, 0.25]);
             saveas(gcf,sprintf('component_3.png'))
             
             return

@@ -18,6 +18,21 @@ classdef ColorHistogram
     end
     
     methods
+
+        function [normality m1_ratio m2_ratio] = color_normality (obj1, obj2, threshold)
+            m1 = obj1.m;
+            m2 = obj2.m;
+            m_union = (m1>threshold) | (m2>threshold);
+            m_intersect = (m1>threshold) & (m2>threshold);
+            n_union = nnz(m_union);
+            n_intersect = nnz(m_intersect);
+            m1_ratio = n_intersect / obj1.n_present;
+            m2_ratio = n_intersect / obj2.n_present;
+            normality = m1_ratio * m2_ratio;
+            
+            %[obj1.n_present obj2.n_present n_union n_intersect]
+            %[m1_ratio m2_ratio]
+        end
         
         function m1_ratio = diff (obj1, obj2, threshold)
             m1 = obj1.m;
