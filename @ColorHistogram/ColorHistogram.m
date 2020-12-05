@@ -49,6 +49,11 @@ classdef ColorHistogram
         end
         
         function obj = ColorHistogram (fn)
+            %
+            % Accumulate Values into Sparse Matrix
+            % https://www.mathworks.com/help/matlab/ref/sparse.html
+            %
+            
             % 3D to 1D
             rgb = imread(fn);
             rgb1 = reshape(rgb,size(rgb,1)*size(rgb,2),3);
