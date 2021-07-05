@@ -1,7 +1,11 @@
 % experiments of pca_spectrum
 % WCC
+% 7/5/2021 review
 % 8/9/2020 
 % 4-18-2020
+%
+% usage: pca_spectrum_finding.SPIE_Fig2
+% 
 classdef pca_spectrum_finding < handle
     %PCA_SPECTRUM_FINDING Summary of this class goes here
     %   Detailed explanation goes here

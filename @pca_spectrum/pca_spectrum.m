@@ -152,9 +152,9 @@ classdef pca_spectrum < handle
             msg = obj.organ_name
             
             if WCC == 1
-                obj.transName_path = ['C:\Users\wcc\Desktop\paul data wsi\Data\ProcessedData\031320\' obj.organ_name '\Transmittance\'];
-                obj.imgTruthName_path = ['C:\Users\wcc\Desktop\paul data wsi\Data\ProcessedData\031320\' obj.organ_name '\EndResults\'];
-                obj.cied65_path = 'C:\Users\wcc\Documents\GitHub\paulcode\input\DataIlluminants\';
+                obj.transName_path = ['C:\Users\wayne\Desktop\paul031320\' obj.organ_name '\Transmittance\'];
+                obj.imgTruthName_path = ['C:\Users\wayne\Desktop\paul031320\' obj.organ_name '\EndResults\'];
+                obj.cied65_path = 'C:\Users\wayne\Documents\GitHub\paulcode\input\DataIlluminants\';
             end
             
             % File names
