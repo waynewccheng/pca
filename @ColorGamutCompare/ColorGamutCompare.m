@@ -1,6 +1,8 @@
 %% ColorGamutCompare
 % Compare color gamut between Reinhard, Macenko, Vahadane, and Spectral
 % WCC
+% revised 12/5/2020
+% created for SPIE 2021 submission
 %%
 classdef ColorGamutCompare < handle
     
@@ -12,7 +14,7 @@ classdef ColorGamutCompare < handle
         r_s
         
         % color gamut size of source
-        n_present
+        n_present % number of occupied 3D bins
     end
     
     properties (Access = private)
@@ -272,11 +274,11 @@ classdef ColorGamutCompare < handle
                 ColorGamutCompare.colorgamutsize;
             end
             
-            if 0
+            if 1
                 ColorGamutCompare.colorgamutratio;
             end
             
-            if 1
+            if 0
                 ColorGamutCompare.colorgamutintersection;
             end
             
